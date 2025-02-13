@@ -6,6 +6,7 @@ const Files = require("./models/files")
 const AllChat = require("./models/allchat")
 const Chat = require("./models/chat")
 const Groups = require("./models/groups")
+const GroupChat = require("./models/groupchat")
 const sendEmail = require("./email/email")
 const bcrypt = require('bcrypt')
 const multer = require('multer')
@@ -350,9 +351,9 @@ app.get("/:username/chat", async (req, res) => {
     }
 })
 
-app.post("/:username/groups", async (req, res) => {
+app.post("/:username/groups", upload.array("files", Infinity), async (req, res) => {
     let { username } = req.params
-    let { type, member, groupName, members } = req.body
+    let { type, member, groupName, members} = req.body
     let allmembers = Array.isArray(members) ? [...members, username] : [username]
     if (type === "member_search") {
         try {
@@ -368,7 +369,7 @@ app.post("/:username/groups", async (req, res) => {
             res.status(500).send({ message: "Internal server error" })
         }
     }
-    else {
+    else if (type === "create_group") {
         try {
             let group = await Groups.create({ groupName, members: allmembers })
             if (group) {
@@ -376,6 +377,35 @@ app.post("/:username/groups", async (req, res) => {
             }
         }
         catch (error) {
+            res.status(500).send({ message: "Internal server error" })
+        }
+    }
+    else if (type === "show") {
+        try {
+            let previousChat = await GroupChat.find({ groupName })
+            if (previousChat) {
+                res.status(200).send(previousChat)
+            }
+        }
+        catch (error) {
+            console.log(error)
+            res.status(500).send({ message: "Internal server error" })
+        }
+    }
+    else {
+        try {
+            let files = req.files.map(file => ({
+                fileName: file.originalname,
+                fileUrl: file.path,
+                uploadDate: new Date()
+            }))
+            let chat = await GroupChat.create({ groupName: req.body.selectedGroup, from: username, text: req.body.text, files })
+            if (chat) {
+                res.status(200).send(chat)
+            }
+        }
+        catch (error) {
+            console.log(error)
             res.status(500).send({ message: "Internal server error" })
         }
     }

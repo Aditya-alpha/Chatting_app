@@ -32,10 +32,10 @@ export default function Chat() {
                     let data = await response.json()
                     const uniqueChats = data.reduce((acc, chat) => {
                         if (!acc.some(existingChat => existingChat.to === chat.to)) {
-                            acc.push(chat);
+                            acc.push(chat)
                         }
-                        return acc;
-                    }, []);
+                        return acc
+                    }, [])
                     setAllChats(uniqueChats)
                 }
             }
@@ -48,7 +48,7 @@ export default function Chat() {
 
     useEffect(() => {
         if (!to) return
-        const fetchData = async () => {
+        let fetchData = async () => {
             let type = "show"
             try {
                 let response = await fetch(`http://localhost:8000/${username}/chat`, {
@@ -76,12 +76,11 @@ export default function Chat() {
     }
 
     function handleCheck(chatTo) {
-        setIsClicked(true);
-        setTo(chatTo);
+        setIsClicked(true)
+        setTo(chatTo)
 
-        // Fetch previous messages when a chat is selected
         const fetchPreviousMessages = async () => {
-            let type = "show";
+            let type = "show"
             try {
                 let response = await fetch(`http://localhost:8000/${username}/chat`, {
                     method: "POST",
@@ -93,12 +92,12 @@ export default function Chat() {
 
                 if (response.ok) {
                     let data = await response.json();
-                    setFetchedMessage(data);
-                    const files = data.map(item => item.files).flat();
-                    setFetchedFiles(files);
+                    setFetchedMessage(data)
+                    const files = data.map(item => item.files).flat()
+                    setFetchedFiles(files)
                 }
             } catch (error) {
-                alert("An error occurred, please refresh and try again");
+                alert("An error occurred, please refresh and try again")
             }
         };
 
@@ -140,13 +139,13 @@ export default function Chat() {
         if (text.length === 0 && files.length === 0) {
             return
         }
-        let formData = new FormData();
-        formData.append("type", "message");
+        let formData = new FormData()
+        formData.append("type", "message")
         formData.append("to", to);
         formData.append("text", text);
         files.forEach(file => {
-            formData.append("files", file);
-        });
+            formData.append("files", file)
+        })
         let response = await fetch(`http://localhost:8000/${username}/chat`, {
             method: "POST",
             body: formData

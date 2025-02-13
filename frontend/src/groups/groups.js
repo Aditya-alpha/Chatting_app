@@ -21,6 +21,9 @@ export default function Groups() {
     let [groupSearch, setGroupSearch] = useState("")
     let [searchedGroup, setSearchedGroup] = useState([])
     let [selectedGroup, setSelectedGroup] = useState("")
+    let [text, setText] = useState("")
+    let [files, setFiles] = useState([])
+    let [fetchedChat, setFetchedChat] = useState([])
 
     useEffect(() => {
         const textarea = textareaRef.current
@@ -39,6 +42,35 @@ export default function Groups() {
         }
         fetchGroups()
     }, [username, groups, groupSearch])
+
+    useEffect(() => {
+        async function fetchPreviousChats() {
+            try {
+                let response = await fetch(`http://localhost:8000/${username}/groups`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ type: "show", groupName: selectedGroup })
+                })
+                if (!response.ok) {
+                    alert("Error occured to fetch chats")
+                    console.log()
+                }
+                else if (response.ok) {
+                    let data = await response.json()
+                    setFetchedChat(data)
+                }
+                else {
+                    alert("Internal server error.")
+                }
+            }
+            catch (error) {
+                alert("An error occured. Please refresh and try again.")
+            }
+        }
+        fetchPreviousChats()
+    }, [selectedGroup, text])
 
     function handleAdd() {
         setIsAdd(prev => !prev)
@@ -65,6 +97,8 @@ export default function Groups() {
 
     function handleSelectGroup(e) {
         setSelectedGroup(e.currentTarget.innerText)
+        setGroupSearch("")
+        setSearchedGroup([])
     }
 
     async function handleIsMember() {
@@ -115,6 +149,45 @@ export default function Groups() {
                 setGroupName("")
                 setMember("")
                 setIsAdd(false)
+            }
+            else {
+                alert("Internal server error.")
+            }
+        }
+        catch (error) {
+            alert("An error occured. Please refresh and try again.")
+        }
+    }
+
+    function handleText(e) {
+        setText(e.target.value)
+    }
+
+    function handleFiles(e) {
+        setFiles(Array.from(e.target.files))
+    }
+
+    async function handleChat() {
+        if (text.length === 0 && files.length === 0) {
+            return
+        }
+        let formData = new FormData()
+        formData.append("type", "chat")
+        formData.append("text", text)
+        formData.append("selectedGroup", selectedGroup)
+        files.forEach(file => {
+            formData.append("files", file)
+        })
+        try {
+            let response = await fetch(`http://localhost:8000/${username}/groups`, {
+                method: "POST",
+                body: formData
+            })
+            if (response.ok) {
+                const newMessage = { text: text, files: files.map(file => ({ fileUrl: URL.createObjectURL(file) })) }
+                setFetchedChat(prevMessages => [...prevMessages, newMessage])
+                setText("")
+                setFiles([])
             }
             else {
                 alert("Internal server error.")
@@ -206,13 +279,29 @@ export default function Groups() {
                             <p className="mt-[10px] ml-4 text-lg font-medium" >{selectedGroup}</p>
                         </div>
                         <div className="h-full w-full overflow-y-scroll px-4 my-2 scrollbar-thin scrollbar-track-[#262523] scrollbar-thumb-stone-600">
-
+                            {fetchedChat.length > 0 &&
+                                <div>
+                                    {fetchedChat.map((message, index) => (
+                                        <div>
+                                            <div key={index} >{message.text}</div>
+                                            {message.files.length > 0 &&
+                                                <div>
+                                                    {message.files.map((file, index) => (
+                                                        <div key={index}>
+                                                            <img src={file.fileUrl} alt="image" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            }
+                                        </div>
+                                    ))}
+                                </div>}
                         </div>
                         <div className="w-full py-3 border-t border-t-white bg-stone-600 rounded-br-lg rounded-bl-lg flex items-center" >
                             <label htmlFor="attach" className="mx-12 px-1 text-3xl cursor-pointer" ><GrFormAttachment /></label>
-                            <input id="attach" type="file" className="hidden" />
-                            <textarea ref={textareaRef} placeholder="Type a message" style={{ maxHeight: "6em", minHeight: "auto" }} className="w-full resize-none bg-stone-600 outline-none overflow-y-auto scrollbar-none pr-28" />
-                            <VscSend className="text-3xl mr-6 cursor-pointer" />
+                            <input onChange={handleFiles} id="attach" type="file" className="hidden" />
+                            <textarea value={text} onChange={handleText} ref={textareaRef} placeholder="Type a message" style={{ maxHeight: "6em", minHeight: "auto" }} className="w-full resize-none bg-stone-600 outline-none overflow-y-auto scrollbar-none pr-28" />
+                            <VscSend onClick={handleChat} className="text-3xl mr-6 cursor-pointer" />
                         </div>
                     </div>
                     :
