@@ -1,3 +1,31 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes continuous-glow {
+    0%, 100% { 
+        filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.2)) brightness(90%);
+    }
+    50% { 
+        filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5)) brightness(105%);
+    }
+  }
+  
+  .animate-glow {
+    animation: continuous-glow 3s infinite ease-in-out;
+    will-change: filter, transform;
+  }
+
+  @keyframes continuous-glow-star {
+    0%, 100% { 
+        filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.2)) brightness(90%);
+    }
+    50% { 
+        filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.5)) brightness(200%);
+    }
+  }
+  
+  .animate-glow-star {
+    animation: continuous-glow-star 2s infinite ease-in-out;
+    will-change: filter, transform;
+  }

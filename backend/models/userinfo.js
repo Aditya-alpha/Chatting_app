@@ -18,6 +18,10 @@ let userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true
+    },
+    profile_photo: {
+        type: String,
+        required: true
     }
 })
 

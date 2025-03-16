@@ -26,7 +26,7 @@ function App() {
   let [isSignedin, setIsSignedin] = useState(false)
 
   return (
-    <div className="bg-[#262523] h-screen w-full">
+    <div className="h-full w-full bg-black opacity-90 pb-12" >
       <Context.Provider value={[isSignedin, setIsSignedin]} >
         <Router>
           <Routes>

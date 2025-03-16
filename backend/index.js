@@ -12,16 +12,26 @@ const bcrypt = require('bcrypt')
 const multer = require('multer')
 const cloudinary = require("./uploadfiles")
 const { CloudinaryStorage } = require('multer-storage-cloudinary')
+const { Server } = require('socket.io')
+const { createServer } = require('http')
 
 const app = express()
 
-const PORT = process.env.PORT
+const server = createServer(app)
+const io = new Server(server, {
+    cors: {
+        origin: 'http://localhost:3000',
+        methods: ["GET", "POST"]
+    }
+})
 
 const corsOptions = {
     origin: 'http://localhost:3000',
     methods: "GET, POST, PUT, DELETE, PATCH, HEAD",
     credentials: true
 }
+
+const PORT = process.env.PORT
 
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
@@ -43,7 +53,7 @@ app.get("/", () => {
 })
 
 app.post("/signup", async (req, res) => {
-    let { username, email, password } = req.body
+    let { username, email, password, profile_photo } = req.body
     try {
         let isUser = await UserInfo.findOne({ $or: [{ username: username }, { email: email }] })
         if (isUser) {
@@ -59,7 +69,7 @@ app.post("/signup", async (req, res) => {
         let otp = Math.floor(100000 + Math.random() * 900000)
         await sendEmail(email, otp)
         let hashedPassword = await bcrypt.hash(password, 10)
-        await Otp.findOneAndUpdate({ email: email }, { username: username, email: email, password: hashedPassword, otp: otp }, { upsert: true, new: true })
+        await Otp.findOneAndUpdate({ email: email }, { username: username, email: email, password: hashedPassword, otp: otp, profile_photo: profile_photo }, { upsert: true, new: true })
         return res.status(200).json("Success")
     }
     catch (error) {
@@ -72,13 +82,14 @@ app.post("/signup/otp", async (req, res) => {
     try {
         let otpdata = await Otp.findOne({ email: email })
         if (otpdata.otp === parseInt(enteredotp)) {
-            await UserInfo.create({
+            let data = await UserInfo.create({
                 username: otpdata.username,
                 email: otpdata.email,
                 password: otpdata.password,
+                profile_photo: otpdata.profile_photo
             })
             await Otp.deleteOne({ email })
-            res.status(200).send("Signup successful")
+            res.status(200).send(data)
         }
         else {
             res.status(403).send("Incorrect OTP")
@@ -185,11 +196,20 @@ app.post("/:username/upload", upload.array("files", Infinity), async (req, res) 
             fileUrl: file.path,
             uploadDate: new Date()
         }))
-        let mainData = await Files.create({
-            username: username,
-            files: files
-        })
-        res.status(200).send(mainData)
+        let userData = await Files.find({ username })
+        let allDocs = userData.flatMap(doc => doc.files)
+        let userFiles = allDocs.map(file => file.fileName)
+        let isAlready = files.some(file => userFiles.includes(file.fileName))
+        if (!isAlready) {
+            let mainData = await Files.create({
+                username: username,
+                files: files
+            })
+            res.status(200).send(mainData)
+        }
+        else {
+            res.status(400).send({ message: "File already exists !" })
+        }
     }
     catch (error) {
         res.status(500).send({ message: "Internal server error" })
@@ -251,19 +271,61 @@ app.post("/:username/allchat", upload.array("files", Infinity), async (req, res)
         }))
         let mainData = await AllChat.create({
             username: username,
-            text: message,
+            text: {
+                message: message,
+                sentDate: new Date()
+            },
             files: files
         })
-        res.status(200).send(mainData)
+        let user = await UserInfo.findOne({ username: username }, "profile_photo")
+        let messageWithPhoto = {
+            ...mainData.toObject(),
+            profile_photo: user.profile_photo
+        }
+        io.emit("newMessage", messageWithPhoto)
+        res.status(200).send(messageWithPhoto)
     }
     catch (error) {
         res.status(500).send({ message: "Internal server error" })
+        console.log(error)
     }
 })
 
 app.get("/:username/allchat", async (req, res) => {
     try {
         let data = await AllChat.find({})
+        let fullData = await Promise.all(
+            data.map(async (chat) => {
+                let profilePhotos = await UserInfo.findOne({ username: chat.username }, "profile_photo")
+                return {
+                    ...chat.toObject(),
+                    profile_photo: profilePhotos.profile_photo
+                }
+            }))
+        res.status(200).send(fullData)
+    }
+    catch (error) {
+        res.status(500).send({ message: "Internal server error" })
+    }
+})
+
+app.get("/:username/profile", async (req, res) => {
+    let { username } = req.params
+    try {
+        let data = await UserInfo.findOne({ username })
+        res.status(200).send(data)
+    }
+    catch (error) {
+        res.status(500).send({ message: "Internal server error" })
+    }
+})
+
+app.post("/:username/profile", upload.single("profile_photo"), async (req, res) => {
+    let { username } = req.params
+    let profile_photo = req.file.path
+    try {
+        let data = await UserInfo.findOneAndUpdate({ username }, { profile_photo }, { new: true })
+
         res.status(200).send(data)
     }
     catch (error) {
@@ -353,7 +415,7 @@ app.get("/:username/chat", async (req, res) => {
 
 app.post("/:username/groups", upload.array("files", Infinity), async (req, res) => {
     let { username } = req.params
-    let { type, member, groupName, members} = req.body
+    let { type, member, groupName, members } = req.body
     let allmembers = Array.isArray(members) ? [...members, username] : [username]
     if (type === "member_search") {
         try {
@@ -412,13 +474,13 @@ app.post("/:username/groups", upload.array("files", Infinity), async (req, res) 
 })
 
 app.get("/:username/groups", async (req, res) => {
-    let {username} = req.params
-    let groups = await Groups.find({members: username})
-    if(groups) {
+    let { username } = req.params
+    let groups = await Groups.find({ members: username })
+    if (groups) {
         res.status(200).send(groups)
     }
 })
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log("Server is listening...")
 })

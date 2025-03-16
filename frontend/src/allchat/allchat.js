@@ -1,16 +1,18 @@
 import { useState, useRef, useEffect } from "react"
 import Navbar from "../navbar/navbar"
-import profile from "../images/background.webp"
 import { GrFormAttachment } from "react-icons/gr"
 import { VscSend } from "react-icons/vsc"
+import { io } from 'socket.io-client'
+
+const socket = io("http://localhost:8000")
 
 export default function Allchat() {
 
     let [message, setMessage] = useState("")
     let [files, setFiles] = useState([])
     let [fetchedMessage, setFetchedMessage] = useState([])
-    let [fetchedFiles, setFetchedFiles] = useState([])
     let textareaRef = useRef(null)
+    let endRef = useRef(null)
     let username = window.localStorage.getItem("username")
 
     let handleInputChange = (e) => {
@@ -18,7 +20,12 @@ export default function Allchat() {
     }
 
     let handleFileChange = (e) => {
-        setFiles(e.target.files ? Array.from(e.target.files) : [])
+        let selectedFiles = e.target.files ? Array.from(e.target.files) : []
+        setFiles(selectedFiles)
+        if (selectedFiles.length > 0) {
+            let fileNames = selectedFiles.map(file => file.name).join(", ");
+            setMessage(prev => prev ? `${prev} [${fileNames}]` : `[${fileNames}]`);
+        }
     }
 
     useEffect(() => {
@@ -42,8 +49,7 @@ export default function Allchat() {
                 if (response.ok) {
                     let data = await response.json()
                     setFetchedMessage(data)
-                    const files = data.map(item => item.files).flat()
-                    setFetchedFiles(files)
+                    endRef.current?.scrollIntoView({ behavior: "instant" })
                 }
             } catch (error) {
                 alert("An error occurred, please refresh and try again")
@@ -52,24 +58,35 @@ export default function Allchat() {
         fetchData()
     }, [username])
 
+    useEffect(() => {
+        socket.on("newMessage", (newMessage) => {
+            setFetchedMessage((prevMessages) => [...prevMessages, newMessage]);
+            setTimeout(() => {
+                endRef.current?.scrollIntoView({ behavior: "smooth" });
+            }, 100)
+        })
+        return () => socket.off("newMessage")
+    }, [])
+
     async function handleSend() {
         if (message.length === 0 && files.length === 0) {
             return
         }
+        let cleanMessage = message.replace(/\[.*?\]/g, "").trim()
         let formData = new FormData()
         files.forEach(file => formData.append("files", file))
-        formData.append("message", message)
+        formData.append("message", cleanMessage)
         try {
             let response = await fetch(`http://localhost:8000/${username}/allchat`, {
                 method: "POST",
                 body: formData
             })
             if (response.ok) {
-                const newMessage = { text: message, files: files.map(file => ({ fileUrl: URL.createObjectURL(file) })) }
-                setFetchedMessage(prevMessages => [...prevMessages, newMessage])
-                setFetchedFiles(prevFiles => [...prevFiles, ...files.map(file => ({ fileUrl: URL.createObjectURL(file) }))])
                 setFiles([])
                 setMessage("")
+                setTimeout(() => {
+                    endRef.current?.scrollIntoView({ behavior: "smooth" });
+                }, 100)
             }
         }
         catch (error) {
@@ -77,51 +94,122 @@ export default function Allchat() {
         }
     }
 
+    function handleEnter(e) {
+        if (e.key === "Enter") {
+            handleSend()
+        }
+    }
+
     return (
         <div className="h-full w-full">
             <Navbar />
-            <div className="text-white h-[640px] mx-12 m-4 border-2 bg-[#262523] rounded-xl pt-1 flex flex-col">
-                <div className="h-full w-full overflow-y-scroll px-4 my-2 scrollbar-thin scrollbar-track-[#262523] scrollbar-thumb-stone-600">
-                    {fetchedMessage.length > 0 && fetchedMessage.map((msg) => (
-                        <div key={msg._id} className="flex" >
-                            <img src={profile} alt="profile" className="h-12 w-12 rounded-full" />
-                            <p>{msg.text}</p>
-                            {msg.files.length > 0 && (
-                                <div>
-                                    {msg.files.map((file, idx) => (
-                                        <div key={idx}>
-                                            {file.fileUrl && (
-                                                <>
-                                                    {file.fileUrl.endsWith(".mp4") ||
-                                                        file.fileUrl.endsWith(".webm") ||
-                                                        file.fileUrl.endsWith(".ogg") ? (
-                                                        <video
-                                                            controls
-                                                            className="max-w-[300px] max-h-[300px] object-contain"
-                                                        >
-                                                            <source src={file.fileUrl} type="video/mp4" />
-                                                            Your browser does not support the video tag.
-                                                        </video>
-                                                    ) : (
-                                                        <img
-                                                            src={file.fileUrl}
-                                                            alt={`Uploaded File ${idx + 1}`}
-                                                            className="max-w-[300px] max-h-[300px] object-contain"
-                                                        />
+            <div className="text-white h-[600px] mx-12 my-4 border-2 bg-[#262523] rounded-xl pt-1 flex flex-col">
+                <div className="h-full w-full overflow-y-scroll px-4 mb-2 mt-3 scrollbar-thin scrollbar-track-[#262523] scrollbar-thumb-stone-600 flex flex-col">
+                    {fetchedMessage.length > 0 && fetchedMessage.map((msg) =>
+                    (
+                        msg.username !== username ?
+                            <div key={msg._id} className="flex mb-4 gap-5" >
+                                <img src={msg.profile_photo} alt="profile" className="h-10 w-10 rounded-full p-1 bg-black bg-opacity-40" />
+                                <div className="flex flex-col">
+                                    {msg.files.length > 0 && (
+                                        <div>
+                                            {msg.files.map((file, idx) => (
+                                                <div key={idx}>
+                                                    {file.fileUrl && (
+                                                        <>
+                                                            {file.fileUrl.endsWith(".mp4") ||
+                                                                file.fileUrl.endsWith(".webm") ||
+                                                                file.fileUrl.endsWith(".ogg") ? (
+                                                                <div className="bg-black bg-opacity-40 rounded-lg flex gap-4 relative" >
+                                                                    <video
+                                                                        controls
+                                                                        className="max-w-[300px] max-h-[300px] object-contain rounded-lg"
+                                                                    >
+                                                                        <source src={file.fileUrl} type="video/mp4" />
+                                                                        Your browser does not support the video tag.
+                                                                    </video>
+                                                                    <p className="absolute bottom-0 right-0 pb-2 pr-4 text-xs" >{new Date(file.uploadDate).toLocaleString().slice(11, -6)} {new Date(file.uploadDate).toLocaleString().slice(18)}</p>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="bg-black bg-opacity-40 rounded-lg flex gap-4 relative" >
+                                                                    <img
+                                                                        src={file.fileUrl}
+                                                                        alt={`Uploaded File ${idx + 1}`}
+                                                                        className="max-w-[300px] max-h-[300px] object-contain rounded-lg"
+                                                                    />
+                                                                    <p className="absolute bottom-0 right-0 pb-2 pr-4 text-xs" >{new Date(file.uploadDate).toLocaleString().slice(11, -6)} {new Date(file.uploadDate).toLocaleString().slice(18)}</p>
+                                                                </div>
+                                                            )}
+                                                        </>
                                                     )}
-                                                </>
-                                            )}
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
+                                    )}
+                                    {msg.text.message && (
+                                        <div className="bg-black bg-opacity-40 h-min-9 px-3 py-1 rounded-lg flex gap-4" >
+                                            <p className="text-lg font-medium max-w-[500px] break-words" >{msg.text.message}</p>
+                                            <p className="text-xs self-end" >{new Date(msg.text.sentDate).toLocaleString().slice(11, -6)} {new Date(msg.text.sentDate).toLocaleString().slice(19)}</p>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                    ))}
+                            </div>
+                            :
+                            <div key={msg._id} className="flex mb-4 gap-5 self-end right-6" >
+                                <div className="flex flex-col" >
+                                    {msg.files.length > 0 && (
+                                        <div>
+                                            {msg.files.map((file, idx) => (
+                                                <div key={idx}>
+                                                    {file.fileUrl && (
+                                                        <>
+                                                            {file.fileUrl.endsWith(".mp4") ||
+                                                                file.fileUrl.endsWith(".webm") ||
+                                                                file.fileUrl.endsWith(".ogg") ? (
+                                                                <div className="bg-black bg-opacity-40 rounded-lg flex gap-4 relative" >
+                                                                    <video
+                                                                        controls
+                                                                        className="max-w-[300px] max-h-[300px] object-contain rounded-lg"
+                                                                    >
+                                                                        <source src={file.fileUrl} type="video/mp4" />
+                                                                        Your browser does not support the video tag.
+                                                                    </video>
+                                                                    <p className="absolute bottom-0 right-0 pb-2 pr-4 text-xs" >{new Date(file.uploadDate).toLocaleString().slice(11, -6)} {new Date(file.uploadDate).toLocaleString().slice(18)}</p>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="bg-black bg-opacity-40 rounded-lg flex gap-4 relative" >
+                                                                    <img
+                                                                        src={file.fileUrl}
+                                                                        alt={`Uploaded File ${idx + 1}`}
+                                                                        className="max-w-[300px] max-h-[300px] object-contain rounded-lg"
+                                                                    />
+                                                                    <p className="absolute bottom-0 right-0 pb-2 pr-4 text-xs" >{new Date(file.uploadDate).toLocaleString().slice(11, -6)} {new Date(file.uploadDate).toLocaleString().slice(18)}</p>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {msg.text.message && (
+                                        <div className="bg-black bg-opacity-40 h-min-9 px-3 py-1 rounded-lg flex gap-4" >
+                                            <p className="text-lg font-medium max-w-[500px] break-words" >{msg.text.message}</p>
+                                            <p className="text-xs self-end" >{new Date(msg.text.sentDate).toLocaleString().slice(11, -6)} {new Date(msg.text.sentDate).toLocaleString().slice(19)}</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <img src={msg.profile_photo} alt="profile" className="h-10 w-10 rounded-full p-1 bg-black bg-opacity-40" />
+                            </div>
+                    )
+
+                    )}
+                    <div ref={endRef} />
                 </div>
-                <div className="w-full py-3 border-t border-t-white bg-stone-600 rounded-br-lg rounded-bl-lg flex items-center" >
+                <div className="w-full py-3 border-t border-t-white bg-stone-700 rounded-br-lg rounded-bl-lg flex items-center" >
                     <label htmlFor="attach" className="mx-12 px-1 text-3xl cursor-pointer" ><GrFormAttachment /></label>
                     <input onChange={handleFileChange} id="attach" type="file" className="hidden" />
-                    <textarea onChange={handleInputChange} value={message} ref={textareaRef} placeholder="Type a message" style={{ maxHeight: "6em", minHeight: "auto" }} className="w-full resize-none bg-stone-600 outline-none overflow-y-auto scrollbar-none pr-28" />
+                    <textarea onChange={handleInputChange} onKeyDown={handleEnter} value={message} ref={textareaRef} placeholder="Type a message" style={{ maxHeight: "6em", minHeight: "auto" }} className="w-full resize-none bg-stone-700 outline-none overflow-y-auto scrollbar-none pr-28" />
                     <VscSend onClick={handleSend} className="text-3xl mr-6 cursor-pointer" />
                 </div>
             </div>

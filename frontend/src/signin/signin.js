@@ -58,6 +58,7 @@ export default function Signin() {
                 window.localStorage.setItem("username", data.username)
                 window.localStorage.setItem("email", data.email)
                 window.localStorage.setItem("isSignedin", true)
+                window.localStorage.setItem("profile_photo", data.profile_photo)
                 alert("Signin successful !")
                 navigate("/")
             }

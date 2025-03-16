@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import { useState, useContext } from "react"
-import { Context } from '../App';
-import { RxCross2 } from "react-icons/rx";
+import { Context } from '../App'
+import { RxCross2 } from "react-icons/rx"
 
 export default function Otp() {
 
@@ -32,6 +32,7 @@ export default function Otp() {
                 body: JSON.stringify({ email, enteredotp })
             })
             if (response.ok) {
+                let data = await response.json()
                 window.localStorage.setItem("isSignedin", true)
                 setIsSignedin(true)
                 alert("Sign-up successful!")

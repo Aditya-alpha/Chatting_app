@@ -9,7 +9,7 @@ let allchatchema = new mongoose.Schema({
         type: String
     },
     text: {
-        type: String,
+        message: String,
         sentDate: {
             type: Date,
             default: Date.now

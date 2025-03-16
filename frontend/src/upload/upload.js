@@ -7,6 +7,7 @@ export default function Upload() {
     let navigate = useNavigate()
 
     let [files, setFiles] = useState([])
+    let [uploading, setUploading] = useState(false)
     let username = window.localStorage.getItem("username")
 
     function selectFiles(e) {
@@ -22,6 +23,7 @@ export default function Upload() {
             alert("No files selected.")
             return
         }
+        setUploading(true)
         let formData = new FormData()
         files.forEach(file => formData.append("files", file))
         try {
@@ -33,15 +35,20 @@ export default function Upload() {
                 alert("All files are uploaded successfully.")
                 setFiles([])
             }
+            if (response.status === 400) {
+                alert("Files already exists !")
+                setFiles([])
+            }
         }
         catch (error) {
             alert("An error occured, please refresh and try again")
             navigate("/")
         }
+        setUploading(false)
     }
 
     return (
-        <div className='h-full w-full'>
+        <div className='h-screen w-full'>
             <Navbar />
             <div className="flex w-full justify-center mt-28" >
                 <div className="h-96 w-[500px] bg-stone-600 rounded-2xl px-12 flex flex-col items-center justify-center space-y-6" >
@@ -49,9 +56,9 @@ export default function Upload() {
                     <label htmlFor="upload" className="cursor-pointer text-lg bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600 transition-all" >Choose files</label>
                     <input onChange={selectFiles} id="upload" type="file" multiple className="hidden" />
                     {files.length > 0 && (
-                        <div>
-                            <p onClick={upload} className="cursor-pointer text-lg bg-blue-500 text-white rounded-lg px-9 py-2 hover:bg-blue-600 transition-all" >Upload</p>
-                            <p onClick={refresh} className="cursor-pointer text-lg bg-blue-500 text-white rounded-lg px-9 py-2 hover:bg-blue-600 transition-all mt-6" >Refresh</p>
+                        <div className='flex flex-col'>
+                            <button onClick={upload} disabled={uploading} className={`text-lg text-white rounded-lg px-9 py-2 transition-all ${uploading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600 cursor-pointer"}`} >{uploading ? "Uploading" : "Upload"}</button>
+                            <button onClick={refresh} disabled={uploading} className={`text-lg text-white rounded-lg px-9 py-2 transition-all mt-6 ${uploading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600 cursor-pointer"}`} >Refresh</button>
                         </div>
                     )}
                 </div>

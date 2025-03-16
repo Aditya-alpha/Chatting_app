@@ -1,6 +1,6 @@
 
-import Homebody from "../homebody/homebody";
-import Navbar from "../navbar/navbar";
+import Homebody from "../homebody/homebody"
+import Navbar from "../navbar/navbar"
 
 export default function Home() {
     return (

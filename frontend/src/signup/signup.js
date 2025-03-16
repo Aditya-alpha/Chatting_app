@@ -1,6 +1,7 @@
 import { useState } from "react"
 import {useNavigate} from "react-router-dom"
-import { RxCross2 } from "react-icons/rx";
+import { RxCross2 } from "react-icons/rx"
+import default_profile_photo from "../images/default_profile.png"
 
 export default function SignUp() {
 
@@ -9,7 +10,8 @@ export default function SignUp() {
     let [signUpData, setSignUpData] = useState({
         username: "",
         email: "",
-        password: ""
+        password: "",
+        profile_photo: default_profile_photo
     })
 
     function setData(event) {

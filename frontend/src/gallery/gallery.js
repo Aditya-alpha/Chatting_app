@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import Navbar from "../navbar/navbar"
+import { RxCross1 } from "react-icons/rx"
 
 export default function Gallery() {
-    const [files, setFiles] = useState([]);
-    const [username, setUsername] = useState(null);
+    let [files, setFiles] = useState([])
+    let [username, setUsername] = useState(null)
+    let [fullscreen, setFullscreen] = useState(null)
 
     useEffect(() => {
         const storedUsername = window.localStorage.getItem("username");
@@ -60,7 +62,7 @@ export default function Gallery() {
     const otherFiles = files.filter(file => !/\.(jpg|jpeg|png|gif|webp|mp4|webm|mov)$/i.test(file.fileUrl))
 
     return (
-        <div className="h-full w-full overflow-y-scroll">
+        <div className="h-full w-full">
             <Navbar />
             <div className="flex flex-col px-12">
                 <p className="text-white text-5xl self-center font-semibold mt-4 mb-12">Gallery</p>
@@ -69,17 +71,17 @@ export default function Gallery() {
                     <div className="flex rounded-lg cursor-pointer gap-12 flex-wrap">
                         {images.length > 0 ? (
                             images.map((file, index) => (
-                                <div key={index} className="relative group">
-                                    <img src={file.fileUrl} alt={file.fileName} className="rounded-lg w-60 h-60" />
+                                <div key={index} onClick={ () => {setFullscreen(file.fileUrl)}} className="relative group w-60 h-48 shadow-lg shadow-gray-700 rounded-lg">
+                                    <img src={file.fileUrl} alt={file.fileName} className="rounded-lg w-full h-full object-cover" />
                                     <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-sm p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <p>{file.fileName}</p>
                                         <p>{new Date(file.uploadDate).toLocaleDateString()}</p>
-                                        <button onClick={() => handleDelete(file.fileName)} className="text-red-500 font-semibold hover:underline mt-1">Delete</button>
+                                        <button onClick={(e) => {e.stopPropagation(); handleDelete(file.fileName)}} className="text-red-500 font-semibold hover:underline mt-1">Delete</button>
                                     </div>
                                 </div>
                             ))
                         ) : (
-                            <p>No images available</p>
+                            <p className="text-white" >No images available</p>
                         )}
                     </div>
                 </div>
@@ -88,8 +90,8 @@ export default function Gallery() {
                     <div className="flex rounded-lg cursor-pointer gap-14 flex-wrap">
                         {videos.length > 0 ? (
                             videos.map((file, index) => (
-                                <div key={index} className="relative group">
-                                    <video controls className="rounded-lg w-60 h-60">
+                                <div key={index} className="relative group w-60 h-48 shadow-lg shadow-gray-700 rounded-lg">
+                                    <video controls className="rounded-lg w-full h-full object-cover">
                                         <source src={file.fileUrl} type="video/mp4" />
                                         Your browser does not support the video tag.
                                     </video>
@@ -101,16 +103,16 @@ export default function Gallery() {
                                 </div>
                             ))
                         ) : (
-                            <p>No videos available</p>
+                            <p className="text-white" >No videos available</p>
                         )}
                     </div>
                 </div>
                 <div className="my-12">
                     <h2 className="text-white text-3xl font-semibold mb-6">Other Files</h2>
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col cursor-pointer">
                         {otherFiles.length > 0 ? (
                             otherFiles.map((file, index) => (
-                                <div key={index} className="relative group">
+                                <div key={index} className="relative group h-[102px]">
                                     <a href={file.fileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">
                                         {file.fileName}
                                     </a>
@@ -122,11 +124,22 @@ export default function Gallery() {
                                 </div>
                             ))
                         ) : (
-                            <p>No other files available</p>
+                            <p className="text-white" >No other files available</p>
                         )}
                     </div>
                 </div>
+                <div className="text-white" >
+                    * You can download the media by opening it, then right click on the page and save image/video.
+                </div>
             </div>
+            {fullscreen && (
+                <div className="fixed inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center">
+                    <button onClick={() => setFullscreen(null)} className="text-white text-3xl ml-[1400px]">
+                        <RxCross1/>
+                    </button>
+                    <img src={fullscreen} className="w-[90%] h-[90%] object-contain rounded-lg" />
+                </div>
+            )}
         </div>
     )
 }
