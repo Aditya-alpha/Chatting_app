@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react"
 import Navbar from "../navbar/navbar"
 import { RxCross1 } from "react-icons/rx"
 
@@ -8,11 +8,11 @@ export default function Gallery() {
     let [fullscreen, setFullscreen] = useState(null)
 
     useEffect(() => {
-        const storedUsername = window.localStorage.getItem("username");
+        const storedUsername = window.localStorage.getItem("username")
         if (storedUsername) {
             setUsername(storedUsername);
         }
-    }, []);
+    }, [])
 
     useEffect(() => {
         if (!username) return;
@@ -29,10 +29,10 @@ export default function Gallery() {
                     const extractedFiles = data.flatMap(item => item.files)
                     setFiles(extractedFiles)
                 } else {
-                    alert("Failed to fetch gallery");
+                    alert("Failed to fetch gallery")
                 }
             } catch (error) {
-                alert("Error fetching gallery");
+                alert("Error fetching gallery")
             }
         }
         showFiles()
@@ -48,12 +48,12 @@ export default function Gallery() {
                 body: JSON.stringify({ fileName })
             })
             if (response.ok) {
-                setFiles(prevFiles => prevFiles.filter(file => file.fileName !== fileName));
+                setFiles(prevFiles => prevFiles.filter(file => file.fileName !== fileName))
             } else {
-                alert("Failed to delete file");
+                alert("Failed to delete file")
             }
         } catch (error) {
-            alert("Error deleting file");
+            alert("Error deleting file")
         }
     }
 
@@ -137,7 +137,7 @@ export default function Gallery() {
                     <button onClick={() => setFullscreen(null)} className="text-white text-3xl ml-[1400px]">
                         <RxCross1/>
                     </button>
-                    <img src={fullscreen} className="w-[90%] h-[90%] object-contain rounded-lg" />
+                    <img src={fullscreen} alt="selected_photo" className="w-[90%] h-[90%] object-contain rounded-lg" />
                 </div>
             )}
         </div>

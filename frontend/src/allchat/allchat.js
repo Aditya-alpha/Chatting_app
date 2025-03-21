@@ -3,6 +3,7 @@ import Navbar from "../navbar/navbar"
 import { GrFormAttachment } from "react-icons/gr"
 import { VscSend } from "react-icons/vsc"
 import { io } from 'socket.io-client'
+import { RxCross1 } from "react-icons/rx"
 
 const socket = io("http://localhost:8000")
 
@@ -11,6 +12,7 @@ export default function Allchat() {
     let [message, setMessage] = useState("")
     let [files, setFiles] = useState([])
     let [fetchedMessage, setFetchedMessage] = useState([])
+    let [fullscreen, setFullscreen] = useState(null)
     let textareaRef = useRef(null)
     let endRef = useRef(null)
     let username = window.localStorage.getItem("username")
@@ -85,7 +87,7 @@ export default function Allchat() {
                 setFiles([])
                 setMessage("")
                 setTimeout(() => {
-                    endRef.current?.scrollIntoView({ behavior: "smooth" });
+                    endRef.current?.scrollIntoView({ behavior: "smooth" })
                 }, 100)
             }
         }
@@ -109,7 +111,7 @@ export default function Allchat() {
                     (
                         msg.username !== username ?
                             <div key={msg._id} className="flex mb-4 gap-5" >
-                                <img src={msg.profile_photo} alt="profile" className="h-10 w-10 rounded-full p-1 bg-black bg-opacity-40" />
+                                <img onClick={ () => {setFullscreen(msg.profile_photo)}} src={msg.profile_photo} alt="profile" className="h-10 w-10 rounded-full p-1 bg-black bg-opacity-40 cursor-pointer" />
                                 <div className="flex flex-col">
                                     {msg.files.length > 0 && (
                                         <div>
@@ -120,7 +122,7 @@ export default function Allchat() {
                                                             {file.fileUrl.endsWith(".mp4") ||
                                                                 file.fileUrl.endsWith(".webm") ||
                                                                 file.fileUrl.endsWith(".ogg") ? (
-                                                                <div className="bg-black bg-opacity-40 rounded-lg flex gap-4 relative" >
+                                                                <div className="bg-black bg-opacity-40 rounded-lg flex gap-4 relative cursor-pointer" >
                                                                     <video
                                                                         controls
                                                                         className="max-w-[300px] max-h-[300px] object-contain rounded-lg"
@@ -131,7 +133,7 @@ export default function Allchat() {
                                                                     <p className="absolute bottom-0 right-0 pb-2 pr-4 text-xs" >{new Date(file.uploadDate).toLocaleString().slice(11, -6)} {new Date(file.uploadDate).toLocaleString().slice(18)}</p>
                                                                 </div>
                                                             ) : (
-                                                                <div className="bg-black bg-opacity-40 rounded-lg flex gap-4 relative" >
+                                                                <div onClick={ () => {setFullscreen(file.fileUrl)}} className="bg-black bg-opacity-40 rounded-lg flex gap-4 relative cursor-pointer" >
                                                                     <img
                                                                         src={file.fileUrl}
                                                                         alt={`Uploaded File ${idx + 1}`}
@@ -147,7 +149,7 @@ export default function Allchat() {
                                         </div>
                                     )}
                                     {msg.text.message && (
-                                        <div className="bg-black bg-opacity-40 h-min-9 px-3 py-1 rounded-lg flex gap-4" >
+                                        <div className="bg-black bg-opacity-40 h-min-9 px-3 py-1 rounded-lg flex gap-4 justify-between" >
                                             <p className="text-lg font-medium max-w-[500px] break-words" >{msg.text.message}</p>
                                             <p className="text-xs self-end" >{new Date(msg.text.sentDate).toLocaleString().slice(11, -6)} {new Date(msg.text.sentDate).toLocaleString().slice(19)}</p>
                                         </div>
@@ -193,17 +195,15 @@ export default function Allchat() {
                                         </div>
                                     )}
                                     {msg.text.message && (
-                                        <div className="bg-black bg-opacity-40 h-min-9 px-3 py-1 rounded-lg flex gap-4" >
+                                        <div className="bg-black bg-opacity-40 h-min-9 px-3 py-1 rounded-lg flex gap-4 justify-between" >
                                             <p className="text-lg font-medium max-w-[500px] break-words" >{msg.text.message}</p>
                                             <p className="text-xs self-end" >{new Date(msg.text.sentDate).toLocaleString().slice(11, -6)} {new Date(msg.text.sentDate).toLocaleString().slice(19)}</p>
                                         </div>
                                     )}
                                 </div>
-                                <img src={msg.profile_photo} alt="profile" className="h-10 w-10 rounded-full p-1 bg-black bg-opacity-40" />
+                                <img onClick={ () => {setFullscreen(msg.profile_photo)}} src={msg.profile_photo} alt="profile" className="h-10 w-10 rounded-full p-1 bg-black bg-opacity-40 cursor-pointer" />
                             </div>
-                    )
-
-                    )}
+                    ))}
                     <div ref={endRef} />
                 </div>
                 <div className="w-full py-3 border-t border-t-white bg-stone-700 rounded-br-lg rounded-bl-lg flex items-center" >
@@ -213,6 +213,14 @@ export default function Allchat() {
                     <VscSend onClick={handleSend} className="text-3xl mr-6 cursor-pointer" />
                 </div>
             </div>
+            {fullscreen && (
+                <div className="fixed inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center">
+                    <button onClick={() => setFullscreen(null)} className="text-white text-3xl ml-[1400px]">
+                        <RxCross1 />
+                    </button>
+                    <img src={fullscreen} alt="selected_photo" className="w-[90%] h-[90%] object-contain rounded-lg" />
+                </div>
+            )}
         </div>
     )
 }

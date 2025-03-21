@@ -51,7 +51,7 @@ function App() {
         </Router>
       </Context.Provider>
     </div>
-  );
+  )
 }
 
 export default App;

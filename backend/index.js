@@ -48,6 +48,14 @@ app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 app.use(cors(corsOptions))
 
+let users = {}
+
+io.on("connection", (socket) => {
+    socket.on("userRegister", (username) => {
+        users[username] = socket.id
+    })
+})
+
 app.get("/", () => {
     console.log("Hello")
 })
@@ -325,7 +333,7 @@ app.post("/:username/profile", upload.single("profile_photo"), async (req, res) 
     let profile_photo = req.file.path
     try {
         let data = await UserInfo.findOneAndUpdate({ username }, { profile_photo }, { new: true })
-
+        io.emit("updateProfile", data)
         res.status(200).send(data)
     }
     catch (error) {
@@ -358,7 +366,7 @@ app.post("/:username/profile/updatepassword", async (req, res) => {
 
 app.post("/:username/chat", upload.array("files", Infinity), async (req, res) => {
     let { username } = req.params
-    let { type, search, to, text } = req.body
+    let { type, search, to, message } = req.body
     if (type === "user") {
         try {
             let user = await UserInfo.find({ username: search })
@@ -370,22 +378,20 @@ app.post("/:username/chat", upload.array("files", Infinity), async (req, res) =>
             res.status(500).send({ message: "Internal server error. Please try again later." })
         }
     }
-    else if (type === "message") {
+    else if (type === "fetch") {
         try {
-            let files = req.files.map(file => ({
-                fileName: file.originalname,
-                fileUrl: file.path,
-                uploadDate: new Date()
-            }))
-            let message = await Chat.create({
-                to: to,
-                from: username,
-                text: text,
-                files: files
-            })
-            if (message) {
-                res.status(200).send(message)
-            }
+            let user = await UserInfo.findOne({ username: to })
+            let chats = await Chat.find({ $or: [{ from: username, to: to }, { from: to, to: username }] })
+            let fullChat = await Promise.all(
+                chats.map(async (chat) => {
+                    let profilePhotos = await UserInfo.findOne({ username: chat.from }, "profile_photo")
+                    return {
+                        ...chat.toObject(),
+                        profile_photo: profilePhotos.profile_photo,
+                        to_profile_photo: user.profile_photo
+                    }
+                }))
+            res.status(200).send(fullChat)
         }
         catch (error) {
             res.status(500).send({ message: "Internal server error. Please try again later." })
@@ -393,11 +399,36 @@ app.post("/:username/chat", upload.array("files", Infinity), async (req, res) =>
     }
     else {
         try {
-            let data = await Chat.find({ $or: [{ from: username, to: to }, { from: to, to: username }] })
-            res.status(200).send(data)
+            let files = req.files.map(file => ({
+                fileName: file.originalname,
+                fileUrl: file.path,
+                uploadDate: new Date()
+            }))
+            let chatMessage = await Chat.create({
+                to: to,
+                from: username,
+                text: {
+                    message: message,
+                    sentDate: new Date()
+                },
+                files: files
+            })
+            if (chatMessage) {
+                let user = await UserInfo.findOne({ username: username }, "profile_photo")
+                let receiver = await UserInfo.findOne({ username: to })
+                let messageWithPhoto = {
+                    ...chatMessage.toObject(),
+                    profile_photo: user.profile_photo,
+                    to_profile_photo: receiver.profile_photo
+                }
+                let receiverId = users[to]
+                let senderId = users[username]
+                io.to(receiverId).to(senderId).emit("freshChatList", messageWithPhoto)
+                res.status(200).send(messageWithPhoto)
+            }
         }
         catch (error) {
-            res.status(500).send({ message: "Internal server error" })
+            res.status(500).send({ message: "Internal server error. Please try again later." })
         }
     }
 })
@@ -405,10 +436,23 @@ app.post("/:username/chat", upload.array("files", Infinity), async (req, res) =>
 app.get("/:username/chat", async (req, res) => {
     let { username } = req.params
     try {
-        let data = await Chat.find({ from: username })
-        res.status(200).send(data)
+            let data = await Chat.find({ $or: [{ from: username }, { to: username }] })
+            let senders = [...new Set(data.map(msg => msg.from))]
+            let senderProfiles = await UserInfo.find({ username: { $in: senders } }, "username profile_photo")
+            let receivers = [...new Set(data.map(msg => msg.to))]
+            let receiverProfiles = await UserInfo.find({ username: { $in: receivers } }, "username profile_photo")
+            let fullData = data.map(msg => {
+                let senderProfile = senderProfiles.find(profile => profile.username === msg.from)
+                let receiverProfile = receiverProfiles.find(profile => profile.username === msg.to)
+                return {
+                ...msg.toObject(),
+                profile_photo: senderProfile.profile_photo,
+                to_profile_photo: receiverProfile.profile_photo
+            }})
+            res.status(200).send(fullData)
     }
     catch (error) {
+        console.log(error)
         res.status(500).send({ message: "Internal server error" })
     }
 })

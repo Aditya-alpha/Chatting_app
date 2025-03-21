@@ -43,10 +43,10 @@ export default function Homebody() {
                     <div className="mb-20">
                         <div className="flex justify-between pr-80" >
                             <p className="text-white text-8xl font-bold opacity-90" >Welcome To The</p>
-                            <img src={star} className="h-12 w-12 rotate-12 mt-8 hover:scale-150 transition-all duration-500 animate-glow-star" />
+                            <img src={star} alt="star_1" className="h-12 w-12 rotate-12 mt-8 hover:scale-150 transition-all duration-500 animate-glow-star" />
                         </div>
                         <div className="flex ml-24 mt-12">
-                            <img src={star} className="h-10 w-10 rotate-12 mt-8 hover:scale-150 transition-all duration-500 animate-glow-star" />
+                            <img src={star} alt="star_2" className="h-10 w-10 rotate-12 mt-8 hover:scale-150 transition-all duration-500 animate-glow-star" />
                             <p className="text-white text-8xl font-bold opacity-90 ml-36" >World of</p>
                             <p className="relative text-yellow-400 opacity-90 text-8xl font-bold ml-10 transition-all duration-300 after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-0 after:h-1 after:bg-yellow-400 after:transition-all after:duration-300 hover:after:w-full">Memories</p>
                         </div>
