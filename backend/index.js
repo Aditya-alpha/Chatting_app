@@ -21,18 +21,18 @@ const app = express()
 const server = createServer(app)
 const io = new Server(server, {
     cors: {
-        origin: 'https://hosttel.netlify.app/',
+        origin: '*',
         methods: ["GET", "POST"]
     }
 })
 
 const corsOptions = {
-    origin: 'https://hosttel.netlify.app/',
+    origin: '*',
     methods: "GET, POST, PUT, DELETE, PATCH, HEAD",
     credentials: true
 }
 
-const PORT = process.env.PORT
+const PORT = process.env.PORT || 3000
 
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
