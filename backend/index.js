@@ -14,6 +14,7 @@ const cloudinary = require("./uploadfiles")
 const { CloudinaryStorage } = require('multer-storage-cloudinary')
 const { Server } = require('socket.io')
 const { createServer } = require('http')
+require("dotenv").config()
 
 const app = express()
 
