@@ -21,13 +21,13 @@ const app = express()
 const server = createServer(app)
 const io = new Server(server, {
     cors: {
-        origin: '*',
+        origin: 'https://hosttel.vercel.app/',
         methods: ["GET", "POST"]
     }
 })
 
 const corsOptions = {
-    origin: '*',
+    origin: 'https://hosttel.vercel.app/',
     methods: "GET, POST, PUT, DELETE, PATCH, HEAD",
     credentials: true
 }
