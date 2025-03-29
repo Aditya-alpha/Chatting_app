@@ -22,7 +22,7 @@ export default function VerifyOtp() {
             return
         }
         try {
-            const response = await fetch("http://localhost:8000/signin/forgotpassword/verify", {
+            const response = await fetch("https://hosttel.onrender.com/signin/forgotpassword/verify", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

@@ -27,7 +27,7 @@ export default function Upload() {
         let formData = new FormData()
         files.forEach(file => formData.append("files", file))
         try {
-            let response = await fetch(`http://localhost:8000/${username}/upload`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/upload`, {
                 method: "POST",
                 body: formData
             })

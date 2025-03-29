@@ -19,7 +19,7 @@ export default function ForgotPassword() {
 
     async function sendOtp() {
         try {
-            const response = await fetch("http://localhost:8000/signin/forgotpassword", {
+            const response = await fetch("https://hosttel.onrender.com/signin/forgotpassword", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

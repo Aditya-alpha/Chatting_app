@@ -36,7 +36,7 @@ export default function ChangePassword() {
             return
         }
         try {
-            const response = await fetch(`http://localhost:8000/signin/updatepassword`, {
+            const response = await fetch(`https://hosttel.onrender.com/signin/updatepassword`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

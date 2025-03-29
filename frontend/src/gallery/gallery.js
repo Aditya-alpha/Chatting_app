@@ -19,7 +19,7 @@ export default function Gallery() {
 
         async function showFiles() {
             try {
-                let response = await fetch(`http://localhost:8000/${username}/gallery`, {
+                let response = await fetch(`https://hosttel.onrender.com/${username}/gallery`, {
                     method: "GET",
                     headers: { "Content-Type": "application/json" }
                 })
@@ -42,7 +42,7 @@ export default function Gallery() {
         let confirmDelete = window.confirm(`Are you sure you want to delete ${fileName}?`)
         if (!confirmDelete) return
         try {
-            let response = await fetch(`http://localhost:8000/${username}/delete`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/delete`, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ fileName })

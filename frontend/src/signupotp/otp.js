@@ -24,7 +24,7 @@ export default function Otp() {
             return
         }
         try {
-            const response = await fetch("http://localhost:8000/signup/otp", {
+            const response = await fetch("https://hosttel.onrender.com/signup/otp", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -32,7 +32,6 @@ export default function Otp() {
                 body: JSON.stringify({ email, enteredotp })
             })
             if (response.ok) {
-                let data = await response.json()
                 window.localStorage.setItem("isSignedin", true)
                 setIsSignedin(true)
                 alert("Sign-up successful!")
@@ -50,7 +49,7 @@ export default function Otp() {
     async function handleResendOtp() {
         setIsResending(true)
         try {
-            const response = await fetch("http://localhost:8000/signup/resend-otp", {
+            const response = await fetch("https://hosttel.onrender.com/signup/resend-otp", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

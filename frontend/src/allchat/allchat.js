@@ -5,7 +5,7 @@ import { VscSend } from "react-icons/vsc"
 import { io } from 'socket.io-client'
 import { RxCross1 } from "react-icons/rx"
 
-const socket = io("http://localhost:8000")
+const socket = io("https://hosttel.onrender.com")
 
 export default function Allchat() {
 
@@ -45,7 +45,7 @@ export default function Allchat() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                let response = await fetch(`http://localhost:8000/${username}/allchat`, {
+                let response = await fetch(`https://hosttel.onrender.com/${username}/allchat`, {
                     method: "GET"
                 })
                 if (response.ok) {
@@ -81,7 +81,7 @@ export default function Allchat() {
         files.forEach(file => formData.append("files", file))
         formData.append("message", cleanMessage)
         try {
-            let response = await fetch(`http://localhost:8000/${username}/allchat`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/allchat`, {
                 method: "POST",
                 body: formData
             })

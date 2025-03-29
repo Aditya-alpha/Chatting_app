@@ -19,7 +19,7 @@ export default function Profile() {
     useEffect(() => {
         async function handleFetch() {
             try {
-                let response = await fetch(`http://localhost:8000/${username}/profile`, {
+                let response = await fetch(`https://hosttel.onrender.com/${username}/profile`, {
                     method: "GET"
                 })
                 if (response.ok) {
@@ -42,7 +42,7 @@ export default function Profile() {
         let formData = new FormData()
         formData.append("profile_photo", newProfilePhoto)
         try {
-            let response = await fetch(`http://localhost:8000/${username}/profile`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/profile`, {
                 method: "POST",
                 body: formData
             })
@@ -63,7 +63,7 @@ export default function Profile() {
             <Navbar />
             <div className="h-1/3 w-full relative">
                 <div className="h-full w-full bg-stone-700" ></div>
-                <img src={userData.profile_photo} className="h-60 w-60 rounded-full cursor-pointer absolute top-32 left-28 p-2 bg-stone-800" /></div>
+                <img src={userData.profile_photo} alt="profile_photo" className="h-60 w-60 rounded-full cursor-pointer absolute top-32 left-28 p-2 bg-stone-800" /></div>
             <div className="mt-36 pl-[125px] text-white text-xl font-medium space-y-1" >
                 <p>{userData.username}</p>
                 <p>{userData.email}</p>

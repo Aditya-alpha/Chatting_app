@@ -40,7 +40,7 @@ export default function SignUp() {
             return
         }
         try {
-            let response = await fetch("http://localhost:8000/signup", {
+            let response = await fetch("https://hosttel.onrender.com/signup", {
                 method: "POST",
                 headers: {
                     'Content-Type': "application/json"

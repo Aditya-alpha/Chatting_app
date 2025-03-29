@@ -6,7 +6,7 @@ import { VscSend } from "react-icons/vsc"
 import { RxCross1 } from "react-icons/rx"
 import { io } from 'socket.io-client'
 
-const socket = io("http://localhost:8000")
+const socket = io("https://hosttel.onrender.com")
 
 export default function Chat() {
     let username = window.localStorage.getItem("username")
@@ -68,7 +68,7 @@ export default function Chat() {
         if (!to) return
         async function handleFetchPreviousMessages() {
             try {
-                let response = await fetch(`http://localhost:8000/${username}/chat`, {
+                let response = await fetch(`https://hosttel.onrender.com/${username}/chat`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -99,7 +99,7 @@ export default function Chat() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                let response = await fetch(`http://localhost:8000/${username}/chat`, {
+                let response = await fetch(`https://hosttel.onrender.com/${username}/chat`, {
                     method: "GET"
                 })
                 if (response.ok) {
@@ -154,7 +154,7 @@ export default function Chat() {
 
     async function handleFind() {
         try {
-            let response = await fetch(`http://localhost:8000/${username}/chat`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/chat`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -191,7 +191,7 @@ export default function Chat() {
         setIsClicked(true)
         setTo(chatTo)
         try {
-            let response = await fetch(`http://localhost:8000/${username}/chat`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/chat`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -225,7 +225,7 @@ export default function Chat() {
             files.forEach(file => {
                 formData.append("files", file)
             })
-            let response = await fetch(`http://localhost:8000/${username}/chat`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/chat`, {
                 method: "POST",
                 body: formData
             })

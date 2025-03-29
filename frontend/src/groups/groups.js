@@ -10,7 +10,7 @@ import { IoSettingsOutline } from "react-icons/io5"
 import profile from "../images/default_profile.png"
 import default_group_photo from "../images/default_group_photo.png"
 
-const socket = io("http://localhost:8000")
+const socket = io("https://hosttel.onrender.com")
 
 export default function Groups() {
 
@@ -137,7 +137,7 @@ export default function Groups() {
 
     useEffect(() => {
         async function fetchGroups() {
-            let response = await fetch(`http://localhost:8000/${username}/groups`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/groups`, {
                 method: "GET"
             })
             if (response.ok) {
@@ -159,7 +159,7 @@ export default function Groups() {
         if (!selectedGroup) return
         async function fetchPreviousChats() {
             try {
-                let response = await fetch(`http://localhost:8000/${username}/groups`, {
+                let response = await fetch(`https://hosttel.onrender.com/${username}/groups`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -228,7 +228,7 @@ export default function Groups() {
     async function handleGroupNameSearch(groupName) {
         if (groupName.trim() === "") return
         try {
-            let response = await fetch(`http://localhost:8000/${username}/groups`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/groups`, {
                 method: "GET"
             })
             if (response.ok) {
@@ -274,7 +274,7 @@ export default function Groups() {
             return
         }
         try {
-            let response = await fetch(`http://localhost:8000/${username}/groups`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/groups`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -334,7 +334,7 @@ export default function Groups() {
         if (!groupName) return alert("Add group name.")
         if (groups.includes(groupName)) return alert("Group with the same name already exists.")
         try {
-            let response = await fetch(`http://localhost:8000/${username}/groups`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/groups`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -391,7 +391,7 @@ export default function Groups() {
             formData.append("files", file)
         })
         try {
-            let response = await fetch(`http://localhost:8000/${username}/groups`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/groups`, {
                 method: "POST",
                 body: formData
             })
@@ -424,7 +424,7 @@ export default function Groups() {
 
         if (newGroupName.trim() === "") return
         try {
-            let response = await fetch(`http://localhost:8000/${username}/groups`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/groups`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -463,7 +463,7 @@ export default function Groups() {
         formData.append("selectedGroup", selectedGroup)
         formData.append("newGroupProfile", newGroupProfile[0])
         try {
-            let response = await fetch(`http://localhost:8000/${username}/groups`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/groups`, {
                 method: "POST",
                 body: formData
             })
@@ -497,7 +497,7 @@ export default function Groups() {
         if (members.length === 0) return alert("Add atleast one member.")
         if (members.some(member => groupsData.find(group => group.groupName === selectedGroup).members.includes(member))) return alert("Member is already in the group.")
         try {
-            let response = await fetch(`http://localhost:8000/${username}/groups`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/groups`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -528,7 +528,7 @@ export default function Groups() {
     async function handleRemoveGroupMembers() {
         if (members.length === 0) return alert("Select atleast one member.")
         try {
-            let response = await fetch(`http://localhost:8000/${username}/groups`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/groups`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -549,7 +549,7 @@ export default function Groups() {
         let confirmLeave = window.confirm("Confirm leaving group ?")
         if (!confirmLeave) return
         try {
-            let response = await fetch(`http://localhost:8000/${username}/groups`, {
+            let response = await fetch(`https://hosttel.onrender.com/${username}/groups`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
