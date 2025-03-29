@@ -49,10 +49,24 @@ app.use(express.json())
 app.use(cors(corsOptions))
 
 let users = {}
+let rooms = {}
+let roomUsers = {}
 
 io.on("connection", (socket) => {
     socket.on("userRegister", (username) => {
         users[username] = socket.id
+    })
+
+    socket.on("room", (room) => {
+        if (!rooms[room]) {
+            rooms[room] = []
+        }
+        socket.join(room)
+        rooms[room].push(socket.id)
+    })
+
+    socket.on("chatUserRegister", (username) => {
+        roomUsers[username] = socket.id
     })
 })
 
@@ -436,20 +450,21 @@ app.post("/:username/chat", upload.array("files", Infinity), async (req, res) =>
 app.get("/:username/chat", async (req, res) => {
     let { username } = req.params
     try {
-            let data = await Chat.find({ $or: [{ from: username }, { to: username }] })
-            let senders = [...new Set(data.map(msg => msg.from))]
-            let senderProfiles = await UserInfo.find({ username: { $in: senders } }, "username profile_photo")
-            let receivers = [...new Set(data.map(msg => msg.to))]
-            let receiverProfiles = await UserInfo.find({ username: { $in: receivers } }, "username profile_photo")
-            let fullData = data.map(msg => {
-                let senderProfile = senderProfiles.find(profile => profile.username === msg.from)
-                let receiverProfile = receiverProfiles.find(profile => profile.username === msg.to)
-                return {
+        let data = await Chat.find({ $or: [{ from: username }, { to: username }] })
+        let senders = [...new Set(data.map(msg => msg.from))]
+        let senderProfiles = await UserInfo.find({ username: { $in: senders } }, "username profile_photo")
+        let receivers = [...new Set(data.map(msg => msg.to))]
+        let receiverProfiles = await UserInfo.find({ username: { $in: receivers } }, "username profile_photo")
+        let fullData = data.map(msg => {
+            let senderProfile = senderProfiles.find(profile => profile.username === msg.from)
+            let receiverProfile = receiverProfiles.find(profile => profile.username === msg.to)
+            return {
                 ...msg.toObject(),
                 profile_photo: senderProfile.profile_photo,
                 to_profile_photo: receiverProfile.profile_photo
-            }})
-            res.status(200).send(fullData)
+            }
+        })
+        res.status(200).send(fullData)
     }
     catch (error) {
         console.log(error)
@@ -457,9 +472,9 @@ app.get("/:username/chat", async (req, res) => {
     }
 })
 
-app.post("/:username/groups", upload.array("files", Infinity), async (req, res) => {
+app.post("/:username/groups", upload.fields([{ name: "files", maxCount: Infinity }, { name: "newGroupProfile", maxCount: 1 }]), async (req, res) => {
     let { username } = req.params
-    let { type, member, groupName, members } = req.body
+    let { type, member, groupName, members, group_photo, newGroupName, selectedGroup } = req.body
     let allmembers = Array.isArray(members) ? [...members, username] : [username]
     if (type === "member_search") {
         try {
@@ -477,20 +492,20 @@ app.post("/:username/groups", upload.array("files", Infinity), async (req, res) 
     }
     else if (type === "create_group") {
         try {
-            let group = await Groups.create({ groupName, members: allmembers })
-            if (group) {
-                res.status(200).send(group)
+            let isGroup = await Groups.findOne({groupName})
+            if (!isGroup){
+                let group = await Groups.create({ groupName, members: allmembers, group_photo })
+                if (group) {
+                    allmembers.forEach((member) => {
+                        if (roomUsers[member]) {
+                            io.to(roomUsers[member]).emit("newGroupCreated", group)
+                        }
+                    })
+                    res.status(200).send(group)
+                }
             }
-        }
-        catch (error) {
-            res.status(500).send({ message: "Internal server error" })
-        }
-    }
-    else if (type === "show") {
-        try {
-            let previousChat = await GroupChat.find({ groupName })
-            if (previousChat) {
-                res.status(200).send(previousChat)
+            else {
+                res.status(300).send({ message: "Group already exists"})
             }
         }
         catch (error) {
@@ -498,17 +513,142 @@ app.post("/:username/groups", upload.array("files", Infinity), async (req, res) 
             res.status(500).send({ message: "Internal server error" })
         }
     }
-    else {
+    else if (type === "show") {
         try {
-            let files = req.files.map(file => ({
+            let previousChat = await GroupChat.find({ groupName })
+            if (previousChat) {
+                let groups = await Groups.find({ members: username })
+                let members_details = await Promise.all(groups.flatMap(group =>
+                    group.members.map(async (member) => {
+                        return await UserInfo.findOne({ username: member }, "username profile_photo")
+                    })
+                ))
+                let chatWithPhotos = previousChat.map(chat => ({
+                    ...chat.toObject(),
+                    profile_photo: members_details.find(detail => chat.from === detail.username)?.profile_photo || null
+                }))
+                res.status(200).send(chatWithPhotos)
+            }
+        }
+        catch (error) {
+            res.status(500).send({ message: "Internal server error" })
+        }
+    }
+    else if (type === "chat") {
+        try {
+            let files = req.files?.files?.map(file => ({
                 fileName: file.originalname,
                 fileUrl: file.path,
                 uploadDate: new Date()
             }))
-            let chat = await GroupChat.create({ groupName: req.body.selectedGroup, from: username, text: req.body.text, files })
+            let chat = await GroupChat.create({
+                groupName: req.body.selectedGroup,
+                from: username,
+                text: {
+                    message: req.body.message,
+                    sentDate: new Date()
+                },
+                files
+            })
             if (chat) {
-                res.status(200).send(chat)
+                let group = await Groups.findOne({ groupName: req.body.selectedGroup })
+                let members_details = await Promise.all(group.members.map(async (member) => {
+                    return await UserInfo.findOne({ username: member }, "username profile_photo")
+                }))
+                let messageWithPhoto = {
+                    ...chat.toObject(),
+                    profile_photo: members_details.find(detail => chat.from === detail.username)?.profile_photo || null
+                }
+                let groupsWithLastMessage = await Promise.all(group.members.map(async (member) => {
+                    let userGroups = await Groups.find({ members: member })
+                    return Promise.all(userGroups.map(async (g) => {
+                        let messages = await GroupChat.find({ groupName: g.groupName }).sort({ date: -1 }).limit(1)
+                        return {
+                            groupName: g.groupName,
+                            members: g.members,
+                            lastMessage: messages.length > 0 ? messages[0] : null
+                        }
+                    }))
+                }))
+                groupsWithLastMessage = [...new Map(groupsWithLastMessage.flat().map(item => [item.groupName, item])).values()]
+                group.members.forEach(member => {
+                    if (roomUsers[member]) {
+                        io.to(roomUsers[member]).emit("freshGroupChatList", { messageWithPhoto, groupsWithLastMessage })
+                    }
+                })
+                res.status(200).send(messageWithPhoto)
             }
+        }
+        catch (error) {
+            res.status(500).send({ message: "Internal server error" })
+        }
+    }
+
+    else if (type === "change_name") {
+        try {
+            let group = await Groups.findOneAndUpdate({ groupName: selectedGroup }, { groupName: newGroupName })
+            await GroupChat.updateMany({ groupName: selectedGroup }, { $set: { groupName: newGroupName } })
+            group.members.forEach(member => {
+                io.to(roomUsers[member]).emit("groupNameChanged", { oldGroupName: selectedGroup, newGroupName })
+            })
+            res.status(200).send(group)
+        }
+        catch (error) {
+            res.status(500).send({ message: "Internal server error" })
+        }
+    }
+
+    else if (type === "change_profile") {
+        let newGroupProfile = req.files.newGroupProfile[0].path
+        try {
+            let updatedGroup = await Groups.findOneAndUpdate({ groupName: selectedGroup }, { group_photo: newGroupProfile }, { new: true })
+            updatedGroup.members.forEach(member => {
+                io.to(roomUsers[member]).emit("groupProfileChanged", { newGroupProfile: updatedGroup.group_photo, groupName: selectedGroup })
+            })
+            res.status(200).send(updatedGroup)
+        }
+        catch (error) {
+            res.status(500).send({ message: "Internal server error" })
+        }
+    }
+
+    else if (type === "add_members") {
+        try {
+            let updatedGroup = await Groups.findOneAndUpdate({ groupName: selectedGroup }, { $addToSet: { members: { $each: members } } }, { new: true })
+            updatedGroup.members.forEach(member => {
+                io.to(roomUsers[member]).emit("newMemberAdded", { group: updatedGroup })
+            })
+            res.status(200).send(updatedGroup)
+        }
+        catch (error) {
+            console.log(error)
+            res.status(500).send({ message: "Internal server error" })
+        }
+    }
+
+    else if(type === "remove_members") {
+        try {
+            let oldGroup = await Groups.findOne({groupName: selectedGroup})
+            let updatedGroup = await Groups.findOneAndUpdate({ groupName: selectedGroup }, { $pull: { members: { $in: members } } }, { new: true })
+            oldGroup.members.forEach(member => {
+                io.to(roomUsers[member]).emit("memberRemoved", { group: updatedGroup })
+            })
+            res.status(200).send(updatedGroup)
+        }
+        catch (error) {
+            console.log(error)
+            res.status(500).send({ message: "Internal server error" })
+        }
+    }
+
+    else {
+        try {
+            let oldGroup = await Groups.findOne({groupName: selectedGroup})
+            let updatedGroup = await Groups.findOneAndUpdate({ groupName: selectedGroup }, { $pull: { members: username } }, { new: true })
+            oldGroup.members.forEach(member => {
+                io.to(roomUsers[member]).emit("memberRemoved", { group: updatedGroup })
+            })
+            res.status(200).send(updatedGroup)
         }
         catch (error) {
             console.log(error)
@@ -519,9 +659,21 @@ app.post("/:username/groups", upload.array("files", Infinity), async (req, res) 
 
 app.get("/:username/groups", async (req, res) => {
     let { username } = req.params
+
+    let allUsers = await UserInfo.find({}, "username profile_photo")
+
     let groups = await Groups.find({ members: username })
+    let groupsWithLastMessage = await Promise.all(groups.map(async (group) => {
+        let messages = await GroupChat.find({ groupName: group.groupName }).sort({ date: -1 }).limit(1)
+        return {
+            groupName: group.groupName,
+            members: group.members,
+            group_photo: group.group_photo,
+            lastMessage: messages.length > 0 ? messages[0] : null
+        }
+    }))
     if (groups) {
-        res.status(200).send(groups)
+        res.status(200).send({ fetchedgroups: groupsWithLastMessage, allUsers })
     }
 })
 

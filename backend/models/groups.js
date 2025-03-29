@@ -17,9 +17,6 @@ let groupsSchema = new mongoose.Schema({
     members: {
         type: Array
     },
-    sender: {
-        type: String
-    },
     text: {
         type: String,
         sentDate: {
@@ -27,16 +24,10 @@ let groupsSchema = new mongoose.Schema({
             default: Date.now
         }
     },
-    files: [
-        {
-            fileName: String,
-            fileUrl: String,
-            uploadDate: {
-                type: Date,
-                default: getISTDate
-            }
-        }
-    ],
+    group_photo: {
+        type: String,
+        required: true
+    },
     date: {
         type: Date,
         default: getISTDate

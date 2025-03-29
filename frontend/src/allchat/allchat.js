@@ -51,7 +51,9 @@ export default function Allchat() {
                 if (response.ok) {
                     let data = await response.json()
                     setFetchedMessage(data)
-                    endRef.current?.scrollIntoView({ behavior: "instant" })
+                    setTimeout(() => {
+                        endRef.current?.scrollIntoView({ behavior: "instant" });
+                    }, 100)
                 }
             } catch (error) {
                 alert("An error occurred, please refresh and try again")

@@ -12,6 +12,7 @@ export default function Chat() {
     let username = window.localStorage.getItem("username")
     let endRef = useRef(null)
     let textareaRef = useRef(null)
+    
     let [to, setTo] = useState("")
     let [search, setSearch] = useState("")
     let [isClicked, setIsClicked] = useState(false)
@@ -19,6 +20,7 @@ export default function Chat() {
     let [files, setFiles] = useState([])
     let [fetchedMessage, setFetchedMessage] = useState([])
     let [allChats, setAllChats] = useState([])
+    let [searchedChat, setSearchedChat] = useState([])
     let [toProfilePhoto, setToProfilePhoto] = useState([])
     let [fullscreen, setFullscreen] = useState(null)
 
@@ -121,7 +123,20 @@ export default function Chat() {
     }, [username, to, fetchedMessage])
 
     function handleSearch(e) {
-        setSearch(e.target.value)
+        let searchValue = e.target.value
+        setSearch(searchValue)
+        if (searchValue.trim() === "") {
+            setSearchedChat([])
+        }
+        else {
+            setSearchedChat(
+                allChats.filter((chat) =>
+                (chat.to === username
+                    ? chat.from.toLowerCase().includes(searchValue.toLowerCase())
+                    : chat.to.toLowerCase().includes(searchValue.toLowerCase()))
+                )
+            )
+        }
     }
 
     function handleText(e) {
@@ -154,6 +169,7 @@ export default function Chat() {
                     setFetchedMessage([])
                     setIsClicked(true)
                     setSearch("")
+                    setSearchedChat([])
                 }
                 else {
                     alert("User not found !")
@@ -186,6 +202,8 @@ export default function Chat() {
                 let chats = await response.json()
                 setFetchedMessage(chats)
                 setToProfilePhoto(chats[0].to_profile_photo)
+                setSearch("")
+                setSearchedChat([])
                 endRef.current?.scrollIntoView({ behavior: "instant" })
             }
         }
@@ -246,30 +264,61 @@ export default function Chat() {
                     <div className="h-[530px] w-full pl-6 pr-3 overflow-y-auto scrollbar-thin scrollbar-track-[#262523] scrollbar-thumb-stone-600">
                         {allChats.length > 0 ?
                             <div>
-                                {allChats.map((chat) => {
-                                    return chat.to === username ?
-                                        (
-                                            <div onClick={() => handleSelectChat(chat.from)} key={chat._id} className={`flex justify-between mt-2 px-3 py-2 rounded-lg cursor-pointer 
+                                {searchedChat.length === 0 ?
+                                    <div>
+                                        {allChats.map((chat) => {
+                                            return chat.to === username ?
+                                                (
+                                                    <div onClick={() => handleSelectChat(chat.from)} key={chat._id} className={`flex justify-between mt-2 px-3 py-2 rounded-lg cursor-pointer 
                                         ${to === chat.from ? "bg-stone-700" : "hover:bg-stone-700 active:bg-stone-600"}`} >
-                                                <div className="flex">
-                                                    <img onClick={ (e) => {e.stopPropagation(); setFullscreen(chat.profile_photo)}} src={chat.profile_photo} alt="profile" className="h-12 w-12 rounded-full bg-black" />
-                                                    <p className="mt-[10px] ml-4 text-lg font-medium" >{chat.from === username ? chat.from + "  (You)" : chat.from}</p>
-                                                </div>
-                                                <p className="mt-3" >{chat.date.slice(11, 16)}</p>
-                                            </div>
-                                        )
-                                        :
-                                        (
-                                            <div onClick={() => handleSelectChat(chat.to)} key={chat._id} className={`flex justify-between mt-2 px-3 py-2 rounded-lg cursor-pointer 
+                                                        <div className="flex">
+                                                            <img onClick={(e) => { e.stopPropagation(); setFullscreen(chat.profile_photo) }} src={chat.profile_photo} alt="profile" className="h-12 w-12 rounded-full bg-black" />
+                                                            <p className="mt-[10px] ml-4 text-lg font-medium" >{chat.from === username ? chat.from + "  (You)" : chat.from}</p>
+                                                        </div>
+                                                        <p className="mt-3" >{chat.date.slice(11, 16)}</p>
+                                                    </div>
+                                                )
+                                                :
+                                                (
+                                                    <div onClick={() => handleSelectChat(chat.to)} key={chat._id} className={`flex justify-between mt-2 px-3 py-2 rounded-lg cursor-pointer 
                                         ${to === chat.to ? "bg-stone-700" : "hover:bg-stone-700 active:bg-stone-600"}`} >
-                                                <div className="flex">
-                                                    <img onClick={ (e) => {e.stopPropagation(); setFullscreen(chat.to_profile_photo)}} src={chat.to_profile_photo} alt="profile" className="h-12 w-12 rounded-full bg-black" />
-                                                    <p className="mt-[10px] ml-4 text-lg font-medium" >{chat.to}</p>
-                                                </div>
-                                                <p className="mt-3" >{chat.date.slice(11, 16)}</p>
-                                            </div>
-                                        )
-                                })}
+                                                        <div className="flex">
+                                                            <img onClick={(e) => { e.stopPropagation(); setFullscreen(chat.to_profile_photo) }} src={chat.to_profile_photo} alt="profile" className="h-12 w-12 rounded-full bg-black" />
+                                                            <p className="mt-[10px] ml-4 text-lg font-medium" >{chat.to}</p>
+                                                        </div>
+                                                        <p className="mt-3" >{chat.date.slice(11, 16)}</p>
+                                                    </div>
+                                                )
+                                        })}
+                                    </div>
+                                    :
+                                    <div>
+                                        {searchedChat.map((chat) => {
+                                            return chat.to === username ?
+                                                (
+                                                    <div onClick={() => handleSelectChat(chat.from)} key={chat._id} className={`flex justify-between mt-2 px-3 py-2 rounded-lg cursor-pointer 
+                                        ${to === chat.from ? "bg-stone-700" : "hover:bg-stone-700 active:bg-stone-600"}`} >
+                                                        <div className="flex">
+                                                            <img onClick={(e) => { e.stopPropagation(); setFullscreen(chat.profile_photo) }} src={chat.profile_photo} alt="profile" className="h-12 w-12 rounded-full bg-black" />
+                                                            <p className="mt-[10px] ml-4 text-lg font-medium" >{chat.from === username ? chat.from + "  (You)" : chat.from}</p>
+                                                        </div>
+                                                        <p className="mt-3" >{chat.date.slice(11, 16)}</p>
+                                                    </div>
+                                                )
+                                                :
+                                                (
+                                                    <div onClick={() => handleSelectChat(chat.to)} key={chat._id} className={`flex justify-between mt-2 px-3 py-2 rounded-lg cursor-pointer 
+                                        ${to === chat.to ? "bg-stone-700" : "hover:bg-stone-700 active:bg-stone-600"}`} >
+                                                        <div className="flex">
+                                                            <img onClick={(e) => { e.stopPropagation(); setFullscreen(chat.to_profile_photo) }} src={chat.to_profile_photo} alt="profile" className="h-12 w-12 rounded-full bg-black" />
+                                                            <p className="mt-[10px] ml-4 text-lg font-medium" >{chat.to}</p>
+                                                        </div>
+                                                        <p className="mt-3" >{chat.date.slice(11, 16)}</p>
+                                                    </div>
+                                                )
+                                        })}
+                                    </div>
+                                }
                             </div>
                             :
                             <p className="text-3xl font-semibold m-16" >Start Messaging</p>
@@ -278,7 +327,7 @@ export default function Chat() {
                 </div>
                 <div className="h-full w-full flex flex-col justify-between">
                     {isClicked &&
-                        <div onClick={ () => {setFullscreen(toProfilePhoto)}} className="flex px-6 py-3 border-b-2 border-black cursor-pointer">
+                        <div onClick={() => { setFullscreen(toProfilePhoto) }} className="flex px-6 py-3 border-b-2 border-black cursor-pointer">
                             <img src={toProfilePhoto} alt="profile" className="h-12 w-12 rounded-full" />
                             <p className="mt-[10px] ml-4 text-lg font-medium" >{to}</p>
                         </div>
@@ -288,7 +337,7 @@ export default function Chat() {
                             {fetchedMessage.length > 0 && fetchedMessage.map((msg) => (
                                 msg.from !== username ?
                                     <div key={msg._id} className="flex mb-4 gap-5" >
-                                        <img onClick={ () => {setFullscreen(msg.profile_photo)}} src={msg.profile_photo} alt="profile" className="h-10 w-10 rounded-full bg-black bg-opacity-40 cursor-pointer" />
+                                        <img onClick={() => { setFullscreen(msg.profile_photo) }} src={msg.profile_photo} alt="profile" className="h-10 w-10 rounded-full bg-black bg-opacity-40 cursor-pointer" />
                                         <div className="flex flex-col" >
                                             {msg.files.length > 0 && (
                                                 <div>
@@ -310,7 +359,7 @@ export default function Chat() {
                                                                             <p className="absolute bottom-0 right-0 pb-2 pr-4 text-xs" >{new Date(file.uploadDate).toLocaleString().slice(11, -6)} {new Date(file.uploadDate).toLocaleString().slice(18)}</p>
                                                                         </div>
                                                                     ) : (
-                                                                        <div onClick={ () => {setFullscreen(file.fileUrl)}} className="bg-black bg-opacity-40 rounded-lg flex gap-4 relative cursor-pointer" >
+                                                                        <div onClick={() => { setFullscreen(file.fileUrl) }} className="bg-black bg-opacity-40 rounded-lg flex gap-4 relative cursor-pointer" >
                                                                             <img
                                                                                 src={file.fileUrl}
                                                                                 alt={`Uploaded File ${idx + 1}`}
@@ -356,7 +405,7 @@ export default function Chat() {
                                                                             <p className="absolute bottom-0 right-0 pb-2 pr-4 text-xs" >{new Date(file.uploadDate).toLocaleString().slice(11, -6)} {new Date(file.uploadDate).toLocaleString().slice(18)}</p>
                                                                         </div>
                                                                     ) : (
-                                                                        <div onClick={ () => {setFullscreen(file.fileUrl)}} className="bg-black bg-opacity-40 rounded-lg flex gap-4 relative cursor-pointer" >
+                                                                        <div onClick={() => { setFullscreen(file.fileUrl) }} className="bg-black bg-opacity-40 rounded-lg flex gap-4 relative cursor-pointer" >
                                                                             <img
                                                                                 src={file.fileUrl}
                                                                                 alt={`Uploaded File ${idx + 1}`}
@@ -378,7 +427,7 @@ export default function Chat() {
                                                 </div>
                                             )}
                                         </div>
-                                        <img onClick={ () => {setFullscreen(msg.profile_photo)}} src={msg.profile_photo} alt="profile" className="h-10 w-10 rounded-full bg-black bg-opacity-40 cursor-pointer" />
+                                        <img onClick={() => { setFullscreen(msg.profile_photo) }} src={msg.profile_photo} alt="profile" className="h-10 w-10 rounded-full bg-black bg-opacity-40 cursor-pointer" />
                                     </div>
                             ))}
                             <div ref={endRef} ></div>
