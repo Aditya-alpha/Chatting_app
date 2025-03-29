@@ -2,7 +2,12 @@ const mongoose = require('mongoose')
 require('dotenv').config()
 
 const mongoURI = process.env.MONGODB_URI.replace("<db_name>", "userinfodb")
-const userinfodb = mongoose.createConnection(mongoURI)
+const userinfodb = mongoose.createConnection(mongoURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    tls: true,
+    serverSelectionTimeoutMS: 5000
+})
 
 let userSchema = new mongoose.Schema({
     username: {

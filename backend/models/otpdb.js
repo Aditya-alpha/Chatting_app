@@ -3,7 +3,12 @@ const { type } = require('os')
 require('dotenv').config()
 
 const mongoURI = process.env.MONGODB_URI.replace("<db_name>", "otpdb")
-const otpdb = mongoose.createConnection(mongoURI)
+const otpdb = mongoose.createConnection(mongoURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    tls: true,
+    serverSelectionTimeoutMS: 5000
+})
 
 let otpSchema = new mongoose.Schema({
     username: {

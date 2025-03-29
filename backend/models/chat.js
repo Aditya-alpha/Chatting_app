@@ -2,7 +2,12 @@ const mongoose = require('mongoose')
 require('dotenv').config()
 
 const mongoURI = process.env.MONGODB_URI.replace("<db_name>", "chatdb")
-const chatdb = mongoose.createConnection(mongoURI)
+const chatdb = mongoose.createConnection(mongoURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    tls: true,
+    serverSelectionTimeoutMS: 5000
+})
 
 const getISTDate = () => {
     let now = new Date()
