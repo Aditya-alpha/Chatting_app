@@ -2,12 +2,7 @@ const mongoose = require('mongoose')
 require('dotenv').config()
 
 const mongoURI = process.env.MONGODB_URI.replace("<db_name>", "groupchatdb")
-const groupchatdb = mongoose.createConnection(mongoURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    tls: true,
-    serverSelectionTimeoutMS: 5000
-})
+const groupchatdb = mongoose.createConnection(mongoURI)
 
 const getISTDate = () => {
     let now = new Date()

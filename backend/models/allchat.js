@@ -2,12 +2,7 @@ const mongoose = require('mongoose')
 require('dotenv').config()
 
 const mongoURI = process.env.MONGODB_URI.replace("<db_name>", "allchatdb")
-const allchatdb = mongoose.createConnection(mongoURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    tls: true,
-    serverSelectionTimeoutMS: 5000
-})
+const allchatdb = mongoose.createConnection(mongoURI)
 
 let allchatchema = new mongoose.Schema({
     username: {
