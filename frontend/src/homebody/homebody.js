@@ -1,4 +1,6 @@
 import { useNavigate } from "react-router-dom"
+import { useContext } from "react"
+import { Context } from '../App';
 import star from "../images/star.png"
 
 export default function Homebody() {
@@ -6,9 +8,13 @@ export default function Homebody() {
     let navigate = useNavigate()
 
     let username = window.localStorage.getItem("username")
+    let [isSignedin, setIsSignedin] = useContext(Context)
 
     function handleClick1(e) {
         let name = e.currentTarget.querySelector("p").innerText
+        if (!isSignedin) {
+            return navigate("/signup")
+        }
         if (name === "Chatting") {
             navigate(`/${username}/chats`)
         }
@@ -25,6 +31,9 @@ export default function Homebody() {
 
     function handleClick2(e) {
         let name = e.target.innerText
+        if (!isSignedin) {
+            return navigate("/signup")
+        }
         if (name === "Chatting") {
             navigate(`/${username}/chats`)
         }
